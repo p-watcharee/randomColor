@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Color Game (Delay + Result)</title>
+  <style>
+    body{font-family:system-ui,Segoe UI,Tahoma; margin:0; background:#0f172a; color:#e5e7eb;}
+    .wrap{max-width:760px; margin:0 auto; padding:24px;}
+    .card{background:#111827; border:1px solid #1f2937; border-radius:16px; padding:20px; box-shadow:0 10px 30px rgba(0,0,0,.35);}
+    .title{font-size:22px; font-weight:800; margin:0 0 6px;}
+    .sub{opacity:.85; margin:0 0 16px; line-height:1.5;}
+    .row{display:flex; gap:12px; flex-wrap:wrap; align-items:center;}
+    button{cursor:pointer; border:0; border-radius:12px; padding:12px 16px; font-weight:800; background:#22c55e; color:#052e16;}
+    button:disabled{opacity:.5; cursor:not-allowed;}
+    .status{opacity:.9}
+    .bar{height:10px; background:#0b1220; border:1px solid #1f2937; border-radius:999px; overflow:hidden; margin-top:14px;}
+    .fill{height:100%; width:0%; background:#60a5fa; transition:width .12s linear;}
+    .grid{margin-top:18px; display:grid; grid-template-columns: 1.1fr .9fr; gap:12px;}
+    .box{border-radius:14px; border:1px solid #1f2937; padding:14px; background:#0b1220;}
+    .swatch{height:160px; border-radius:14px; border:1px solid #1f2937; background:#334155;}
+    .mono{font-family:ui-monospace, SFMono-Regular, Menlo, monospace; font-size:13px; opacity:.92;}
+    .big{font-size:18px; font-weight:900; margin:0 0 6px;}
+    .pill{display:inline-block; padding:4px 10px; border-radius:999px; border:1px solid #334155; background:#0b1220; font-size:12px; opacity:.9;}
+    .blink{animation:blink .18s infinite alternate;}
+    @keyframes blink{from{filter:brightness(.92)} to{filter:brightness(1.18)}}
+    .hint{margin-top:10px; opacity:.8; font-size:13px; line-height:1.5;}
+    input[type="number"]{width:120px; padding:10px 12px; border-radius:12px; border:1px solid #1f2937; background:#0b1220; color:#e5e7eb;}
+    label{font-weight:700; opacity:.95}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <p class="title">🎮 เกมสุ่มสี (มีดีเลย์แบบเกม)</p>
+      <p class="sub">กด “เริ่ม” แล้วระบบจะหน่วงเวลา + แสดงการสุ่ม ก่อนสรุปว่าได้สีอะไร</p>
+
+      <div class="row" style="margin-bottom:10px;">
+        <label for="score">คะแนน (0–100):</label>
+        <input id="score" type="number" min="0" max="100" value="72" />
+        <span class="pill">โหมด: ใช้คะแนนแมปเป็นสี</span>
+      </div>
+
+      <div class="row">
+        <button id="startBtn">เริ่ม</button>
+        <span id="status" class="status"></span>
+      </div>
+
+      <div class="bar"><div id="fill" class="fill"></div></div>
+
+      <div class="grid">
+        <div class="box">
+          <div class="big">ผลลัพธ์</div>
+          <div id="name">ยังไม่เริ่ม</div>
+          <div id="rgb" class="mono"></div>
+          <div id="hex" class="mono"></div>
+          <div id="time" class="mono"></div>
+          <div class="hint">
+            กติกาแมปคะแนน → สี (แก้ได้ในโค้ด):<br>
+            0–19 Dark Sky, 20–39 True Sky, 40–59 Yellow Green, 60–79 Orange, 80–100 Fitting Yellow
+          </div>
+        </div>
+        <div>
+          <div id="swatch" class="swatch"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ====== 1) พาเลตสี (ปรับเพิ่ม/ลดได้) ======
+    const COLORS = {
+      darkSky:      { name:'Dark Sky',      hex:'#735144', rgb:[115,81,68] },
+      trueSky:      { name:'True Sky',      hex:'#6298B1', rgb:[98,152,177] },
+      yellowGreen:  { name:'Yellow Green',  hex:'#9DA844', rgb:[157,168,68] },
+      orange:       { name:'Orange',        hex:'#D67E2C', rgb:[214,126,44] },
+      fittingYellow:{ name:'Fitting Yellow',hex:'#E0CB2E', rgb:[224,203,46] },
+      purple:       { name:'Purple',        hex:'#5E3C6C', rgb:[94,60,108] },
+      moderateRed:  { name:'Moderate Red',  hex:'#C15A63', rgb:[193,90,99] },
+      deepGreen:    { name:'Deep Green',    hex:'#4A5B44', rgb:[74,91,68] },
+    };
+
+    // สีที่ใช้ทำ “เอฟเฟกต์สุ่ม” ระหว่างหน่วงเวลา
+    const FLICKER = Object.values(COLORS).map(c => c.hex);
+
+    // ====== 2) แมปคะแนน → สี (แก้กติกาตรงนี้) ======
+    function mapScoreToColor(score){
+      if (score <= 19) return COLORS.darkSky;
+      if (score <= 39) return COLORS.trueSky;
+      if (score <= 59) return COLORS.yellowGreen;
+      if (score <= 79) return COLORS.orange;
+      return COLORS.fittingYellow;
+    }
+
+    // ====== 3) UI helpers ======
+    const startBtn = document.getElementById('startBtn');
+    const statusEl = document.getElementById('status');
+    const fill = document.getElementById('fill');
+    const swatch = document.getElementById('swatch');
+    const nameEl = document.getElementById('name');
+    const rgbEl = document.getElementById('rgb');
+    const hexEl = document.getElementById('hex');
+    const timeEl = document.getElementById('time');
+    const scoreEl = document.getElementById('score');
+
+    function setResult(color){
+      nameEl.textContent = color.name;
+      rgbEl.textContent = `RGB: ${color.rgb.join(', ')}`;
+      hexEl.textContent = `HEX: ${color.hex}`;
+      timeEl.textContent = `Time: ${new Date().toLocaleString()}`;
+      swatch.style.background = color.hex;
+      swatch.classList.remove('blink');
+    }
+
+    function runProgress(totalMs){
+      fill.style.width = '0%';
+      const t0 = performance.now();
+      const timer = setInterval(()=>{
+        const t = performance.now() - t0;
+        const p = Math.min(100, (t/totalMs)*100);
+        fill.style.width = p.toFixed(1) + '%';
+        if(p >= 100) clearInterval(timer);
+      }, 60);
+    }
+
+    function runFlicker(totalMs){
+      swatch.classList.add('blink');
+      let i = 0;
+      const timer = setInterval(()=>{
+        swatch.style.background = FLICKER[i % FLICKER.length];
+        i++;
+      }, 90);
+      setTimeout(()=> clearInterval(timer), totalMs);
+    }
+
+    // ====== 4) Start game ======
+    startBtn.addEventListener('click', ()=>{
+      const score = Math.max(0, Math.min(100, Number(scoreEl.value || 0)));
+
+      startBtn.disabled = true;
+      statusEl.textContent = 'กำลังสุ่ม...';
+      nameEl.textContent = 'กำลังประมวลผล';
+      rgbEl.textContent = '';
+      hexEl.textContent = '';
+      timeEl.textContent = '';
+
+      // หน่วงเวลาแบบสุ่ม 2.2–4.0 วิ
+      const delayMs = 2200 + Math.floor(Math.random() * 1800);
+
+      runFlicker(delayMs);
+      runProgress(delayMs);
+
+      setTimeout(()=>{
+        const result = mapScoreToColor(score);
+        setResult(result);
+        statusEl.textContent = 'เสร็จแล้ว ✅';
+        startBtn.disabled = false;
+      }, delayMs);
+    });
+  </script>
+</body>
+</html>
