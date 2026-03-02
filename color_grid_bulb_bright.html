@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Color Grid Random Focus - Bulb Bright</title>
+  <style>
+    :root{
+      --bg:#0b1220;
+      --card:#0f172a;
+      --border:#1f2937;
+      --text:#e5e7eb;
+      --muted:#9ca3af;
+      --focus:#ffffff;
+      --ok:#22c55e;
+      --accent:#38bdf8;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: system-ui, Segoe UI, Tahoma, sans-serif;
+      background:linear-gradient(180deg,#08111f 0%,#0b1220 100%);
+      color:var(--text);
+    }
+    .wrap{max-width:1120px; margin:0 auto; padding:22px;}
+    .panel{
+      background:rgba(255,255,255,0.03);
+      border:1px solid var(--border);
+      border-radius:18px;
+      padding:18px;
+      box-shadow:0 10px 30px rgba(0,0,0,.35);
+      backdrop-filter: blur(6px);
+    }
+    h1{font-size:22px; margin:0 0 8px; font-weight:900;}
+    .sub{margin:0 0 14px; color:var(--muted); line-height:1.6}
+    .controls{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:14px;}
+    button{
+      cursor:pointer; border:0;
+      border-radius:12px;
+      padding:10px 14px;
+      font-weight:900;
+      background:var(--ok);
+      color:#052e16;
+      transition:.2s ease;
+    }
+    button:hover{transform:translateY(-1px)}
+    button:disabled{opacity:.55; cursor:not-allowed; transform:none}
+    .pill{
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background:rgba(255,255,255,0.03);
+      color:var(--muted);
+      font-size:12px;
+      font-weight:700;
+    }
+    .legend{
+      display:grid;
+      grid-template-columns:repeat(2, minmax(240px,1fr));
+      gap:10px;
+      margin-bottom:14px;
+    }
+    .legend .box{
+      border:1px solid var(--border);
+      background:rgba(255,255,255,0.03);
+      border-radius:14px;
+      padding:12px;
+    }
+    .legend .title{font-weight:900; margin-bottom:6px}
+    .legend .small{font-size:13px; color:var(--muted); line-height:1.55}
+
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap:0;
+      border-radius:14px;
+      overflow:hidden;
+      border:1px solid var(--border);
+    }
+    .cell{
+      min-height:136px;
+      padding:12px 12px 10px;
+      position:relative;
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+      transition:transform .15s ease, filter .15s ease;
+    }
+    .cell .name{
+      font-weight:900;
+      font-size:15px;
+      line-height:1.2;
+      text-shadow: 0 1px 0 rgba(0,0,0,.25);
+      padding-right:8px;
+    }
+    .cell .vals{
+      font-weight:900;
+      font-size:16px;
+      line-height:1.1;
+      text-shadow: 0 1px 0 rgba(0,0,0,.25);
+    }
+    .cell .vals div{margin-top:2px;}
+    .cell .pct{
+      position:absolute;
+      right:10px;
+      bottom:8px;
+      font-weight:900;
+      font-size:12px;
+      opacity:.95;
+      text-shadow: 0 1px 0 rgba(0,0,0,.25);
+    }
+    .cell .tag{
+      position:absolute;
+      left:10px;
+      top:10px;
+      font-size:10px;
+      font-weight:900;
+      padding:3px 6px;
+      border-radius:999px;
+      background:rgba(255,255,255,.22);
+      backdrop-filter: blur(4px);
+    }
+    .cell.focus{
+      outline:4px solid rgba(255,255,255,.95);
+      outline-offset:-4px;
+      box-shadow: inset 0 0 0 2px rgba(0,0,0,.25), 0 0 0 2px rgba(255,255,255,.08);
+      filter: brightness(1.06) saturate(1.08);
+      transform: translateZ(0) scale(1.01);
+      z-index: 2;
+    }
+    .cell.focus::after{
+      content:"";
+      position:absolute; inset:0;
+      background: radial-gradient(circle at 50% 35%, rgba(255,255,255,.24), rgba(255,255,255,0) 55%);
+      pointer-events:none;
+    }
+
+    .result{
+      margin-top:14px;
+      display:grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap:12px;
+    }
+    .box{
+      border:1px solid var(--border);
+      background:rgba(255,255,255,0.03);
+      border-radius:14px;
+      padding:14px;
+    }
+    .big{font-weight:1000; font-size:18px; margin:0 0 8px;}
+    .mono{font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size:13px; color:var(--muted); line-height:1.75}
+    .swatch{
+      border:1px solid var(--border);
+      border-radius:14px;
+      min-height:138px;
+      box-shadow: inset 0 0 30px rgba(255,255,255,.08);
+    }
+    .footer-note{
+      margin-top:10px;
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.6;
+    }
+
+    @media (max-width: 900px){
+      .grid{grid-template-columns: repeat(3, 1fr);}
+      .result,.legend{grid-template-columns: 1fr;}
+    }
+    @media (max-width: 560px){
+      .grid{grid-template-columns: repeat(2, 1fr);}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="panel">
+      <h1>🎲 สุ่มสีสำหรับหลอดไฟ IoT (Bright / Bulb Friendly)</h1>
+      <p class="sub">เวอร์ชันนี้ปรับชุดสีให้ <b>สว่างขึ้น</b> และ <b>สดขึ้น</b> เพื่อให้ใกล้กับสีที่หลอดไฟ RGB ทั่วไปแสดงผลได้จริงมากกว่าเดิม โดยยังคงโทนเดิมของสีไว้</p>
+
+      <div class="legend">
+        <div class="box">
+          <div class="title">สิ่งที่ปรับเพิ่ม</div>
+          <div class="small">• เพิ่มความสว่างของสี<br>• เพิ่มความสดของสี<br>• ปรับสีเข้มมากให้ใช้งานกับหลอดไฟได้ง่ายขึ้น</div>
+        </div>
+        <div class="box">
+          <div class="title">เหมาะกับการใช้งาน</div>
+          <div class="small">• เกมสุ่มสีในห้องเรียน<br>• ใช้มือถือหมุนวงล้อสีในแอป Smart Life / Tuya<br>• ดูค่า RGB/HEX แล้วตั้งหลอดไฟให้ใกล้เคียงผลลัพธ์</div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button id="startBtn">เริ่มสุ่ม</button>
+        <span class="pill" id="status">พร้อม</span>
+        <span class="pill">Delay: 1s</span>
+        <span class="pill">Duration: 10s</span>
+        <span class="pill">Palette: Bright Bulb Mode</span>
+      </div>
+
+      <div class="grid" id="grid"></div>
+
+      <div class="result">
+        <div class="box">
+          <div class="big">ผลลัพธ์</div>
+          <div id="resultText" class="mono">ยังไม่ได้เริ่มสุ่ม</div>
+        </div>
+        <div class="swatch" id="resultSwatch"></div>
+      </div>
+
+      <div class="footer-note">
+        หมายเหตุ: หลอดไฟแต่ละยี่ห้ออาจแสดงสีไม่ตรง 100% โดยเฉพาะสีเข้มมากหรือสีโทนหม่น เวอร์ชันนี้จึงปรับให้ใช้งานกับหลอดไฟจริงได้ง่ายขึ้น
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Bright / Bulb Friendly palette
+    // ปรับจากไฟล์เดิมให้สว่างและสดขึ้น เพื่อให้ใกล้เคียงการแสดงผลของหลอดไฟ RGB มากขึ้น
+    const data = [
+      {name:"Warm Brown",   rgb:[187,131,109], pct:null, tag:"Bright"},
+      {name:"Soft Peach",   rgb:[216,170,149], pct:null, tag:"Bright"},
+      {name:"Sky Blue",     rgb:[112,141,184], pct:null, tag:"Bright"},
+      {name:"Leaf Green",   rgb:[147,184,112], pct:null, tag:"Bright"},
+      {name:"Lavender Blue",rgb:[151,145,201], pct:null, tag:"Bright"},
+      {name:"Mint Cyan",    rgb:[120,213,192], pct:null, tag:"Bright"},
+
+      {name:"Orange",       rgb:[240,146,59],  pct:null, tag:"Vivid"},
+      {name:"Indigo Blue",  rgb:[97,110,199],  pct:null, tag:"Vivid"},
+      {name:"Rose Red",     rgb:[217,106,116], pct:null, tag:"Vivid"},
+      {name:"Purple",       rgb:[166,105,190], pct:null, tag:"Vivid"},
+      {name:"Lime Green",   rgb:[182,217,79],  pct:null, tag:"Vivid"},
+      {name:"Amber",        rgb:[249,185,62],  pct:null, tag:"Vivid"},
+
+      {name:"Blue",         rgb:[84,91,212],   pct:null, tag:"RGB"},
+      {name:"Green",        rgb:[96,200,100],  pct:null, tag:"RGB"},
+      {name:"Red",          rgb:[221,75,82],   pct:null, tag:"RGB"},
+      {name:"Yellow",       rgb:[255,222,48],  pct:null, tag:"RGB"},
+      {name:"Magenta",      rgb:[212,102,171], pct:null, tag:"RGB"},
+      {name:"Cyan",         rgb:[41,216,255],  pct:null, tag:"RGB"},
+
+      {name:"White",        rgb:[245,245,245], pct:"100%", tag:"WW"},
+      {name:"Cool White 1", rgb:[226,226,226], pct:"85%",  tag:"CW"},
+      {name:"Cool White 2", rgb:[186,186,186], pct:"70%",  tag:"CW"},
+      {name:"Neutral",      rgb:[147,147,147], pct:"55%",  tag:"N"},
+      {name:"Dim Gray",     rgb:[115,115,115], pct:"40%",  tag:"Dim"},
+      {name:"Low Light",    rgb:[70,70,70],    pct:"25%",  tag:"Dim"},
+    ];
+
+    const grid = document.getElementById('grid');
+    const startBtn = document.getElementById('startBtn');
+    const statusEl = document.getElementById('status');
+    const resultText = document.getElementById('resultText');
+    const resultSwatch = document.getElementById('resultSwatch');
+
+    function rgbToHex([r,g,b]){
+      const toHex = (n)=> n.toString(16).padStart(2,'0');
+      return '#' + toHex(r) + toHex(g) + toHex(b);
+    }
+
+    function isDark([r,g,b]){
+      const l = (0.2126*r + 0.7152*g + 0.0722*b);
+      return l < 145;
+    }
+
+    const cells = data.map((d, idx)=>{
+      const hex = rgbToHex(d.rgb);
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.style.background = hex;
+      cell.style.color = isDark(d.rgb) ? '#ffffff' : '#111827';
+      cell.innerHTML = `
+        <div class="tag">${d.tag || ''}</div>
+        <div><div class="name">${d.name}</div></div>
+        <div class="vals">
+          <div>R ${d.rgb[0]}</div>
+          <div>G ${d.rgb[1]}</div>
+          <div>B ${d.rgb[2]}</div>
+        </div>
+        ${d.pct ? `<div class="pct">${d.pct}</div>` : ``}
+      `;
+      cell.dataset.index = idx;
+      cell.dataset.hex = hex;
+      grid.appendChild(cell);
+      return cell;
+    });
+
+    let timer = null;
+    let tick = 0;
+    let currentIndex = -1;
+    let running = false;
+
+    const DELAY_MS = 1000;
+    const TOTAL_SECONDS = 10;
+    const TOTAL_TICKS = TOTAL_SECONDS;
+
+    function clearFocus(){
+      cells.forEach(c=>c.classList.remove('focus'));
+    }
+
+    function pickNextIndex(){
+      let next = Math.floor(Math.random() * cells.length);
+      if (cells.length > 1){
+        while(next === currentIndex) next = Math.floor(Math.random() * cells.length);
+      }
+      return next;
+    }
+
+    function setFocus(index){
+      clearFocus();
+      cells[index].classList.add('focus');
+      currentIndex = index;
+    }
+
+    function showResult(index){
+      const d = data[index];
+      const hex = rgbToHex(d.rgb);
+      resultSwatch.style.background = `radial-gradient(circle at 50% 35%, rgba(255,255,255,.35), rgba(255,255,255,0) 40%), ${hex}`;
+      resultText.innerHTML =
+        `หยุดที่: <b style="color:#e5e7eb">${d.name}</b><br>` +
+        `RGB: ${d.rgb.join(', ')}<br>` +
+        `HEX: ${hex}<br>` +
+        `โหมด: Bright / Bulb Friendly` +
+        (d.pct ? `<br>Brightness hint: ${d.pct}` : '');
+    }
+
+    function start(){
+      if (running) return;
+      running = true;
+      tick = 0;
+      statusEl.textContent = 'กำลังสุ่ม...';
+      startBtn.disabled = true;
+      resultText.textContent = 'กำลังสุ่ม...';
+
+      setFocus(pickNextIndex());
+      tick++;
+
+      timer = setInterval(()=>{
+        if (tick >= TOTAL_TICKS){
+          stop();
+          return;
+        }
+        setFocus(pickNextIndex());
+        tick++;
+      }, DELAY_MS);
+    }
+
+    function stop(){
+      if (timer) clearInterval(timer);
+      timer = null;
+      running = false;
+      startBtn.disabled = false;
+      statusEl.textContent = 'เสร็จแล้ว ✅';
+      showResult(currentIndex);
+    }
+
+    startBtn.addEventListener('click', start);
+    resultSwatch.style.background = '#334155';
+  </script>
+</body>
+</html>
