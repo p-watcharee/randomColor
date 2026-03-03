@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Color Grid Random Focus - Bright Dynamic Palette</title>
+  <style>
+    :root{
+      --bg:#0b1220;
+      --card:#0f172a;
+      --border:#1f2937;
+      --text:#e5e7eb;
+      --muted:#9ca3af;
+      --ok:#22c55e;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: system-ui, Segoe UI, Tahoma, sans-serif;
+      background:linear-gradient(180deg,#08111f 0%,#0b1220 100%);
+      color:var(--text);
+    }
+    .wrap{max-width:1120px; margin:0 auto; padding:22px;}
+    .panel{
+      background:rgba(255,255,255,0.03);
+      border:1px solid var(--border);
+      border-radius:18px;
+      padding:18px;
+      box-shadow:0 10px 30px rgba(0,0,0,.35);
+      backdrop-filter: blur(6px);
+    }
+    h1{font-size:22px; margin:0 0 8px; font-weight:900;}
+    .sub{margin:0 0 14px; color:var(--muted); line-height:1.6}
+    .controls{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:14px;}
+    button{
+      cursor:pointer; border:0;
+      border-radius:12px;
+      padding:10px 14px;
+      font-weight:900;
+      background:var(--ok);
+      color:#052e16;
+      transition:.2s ease;
+    }
+    button:hover{transform:translateY(-1px)}
+    button:disabled{opacity:.55; cursor:not-allowed; transform:none}
+    .pill{
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background:rgba(255,255,255,0.03);
+      color:var(--muted);
+      font-size:12px;
+      font-weight:700;
+    }
+    .legend{
+      display:grid;
+      grid-template-columns:repeat(2, minmax(240px,1fr));
+      gap:10px;
+      margin-bottom:14px;
+    }
+    .legend .box, .box{
+      border:1px solid var(--border);
+      background:rgba(255,255,255,0.03);
+      border-radius:14px;
+      padding:12px;
+    }
+    .legend .title{font-weight:900; margin-bottom:6px}
+    .legend .small{font-size:13px; color:var(--muted); line-height:1.55}
+
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap:0;
+      border-radius:14px;
+      overflow:hidden;
+      border:1px solid var(--border);
+    }
+    .cell{
+      min-height:136px;
+      padding:12px 12px 10px;
+      position:relative;
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+      transition:transform .15s ease, filter .15s ease;
+    }
+    .cell .name{font-weight:900;font-size:15px;line-height:1.2;text-shadow:0 1px 0 rgba(0,0,0,.25);padding-right:8px;}
+    .cell .vals{font-weight:900;font-size:16px;line-height:1.1;text-shadow:0 1px 0 rgba(0,0,0,.25);}
+    .cell .vals div{margin-top:2px;}
+    .cell .tag{position:absolute;left:10px;top:10px;font-size:10px;font-weight:900;padding:3px 6px;border-radius:999px;background:rgba(255,255,255,.22);backdrop-filter: blur(4px);}
+    .cell.focus{
+      outline:4px solid rgba(255,255,255,.95);
+      outline-offset:-4px;
+      box-shadow: inset 0 0 0 2px rgba(0,0,0,.25), 0 0 0 2px rgba(255,255,255,.08);
+      filter: brightness(1.06) saturate(1.08);
+      transform: translateZ(0) scale(1.01);
+      z-index:2;
+    }
+    .cell.focus::after{
+      content:"";
+      position:absolute; inset:0;
+      background: radial-gradient(circle at 50% 35%, rgba(255,255,255,.24), rgba(255,255,255,0) 55%);
+      pointer-events:none;
+    }
+    .result{margin-top:14px;display:grid;grid-template-columns: 1.2fr .8fr;gap:12px;}
+    .big{font-weight:1000; font-size:18px; margin:0 0 8px;}
+    .mono{font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size:13px; color:var(--muted); line-height:1.75}
+    .swatch{border:1px solid var(--border);border-radius:14px;min-height:138px;box-shadow: inset 0 0 30px rgba(255,255,255,.08);}
+    .footer-note{margin-top:10px;color:var(--muted);font-size:13px;line-height:1.6;}
+
+    @media (max-width: 900px){
+      .grid{grid-template-columns: repeat(3, 1fr);}
+      .result,.legend{grid-template-columns: 1fr;}
+    }
+    @media (max-width: 560px){
+      .grid{grid-template-columns: repeat(2, 1fr);}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="panel">
+      <h1>🎲 สุ่มสีสดสำหรับหลอดไฟ IoT</h1>
+      <p class="sub">เวอร์ชันนี้ <b>ตัดกลุ่มสีเทา/ดำออกทั้งหมด</b> และเมื่อกดเริ่มใหม่แต่ละครั้ง ระบบจะ <b>สุ่มชุดสีใหม่ทั้งกระดาน</b> เพื่อให้ได้สีสด สว่าง และใกล้กับหลอดไฟ RGB สำเร็จรูปมากขึ้น</p>
+
+      <div class="legend">
+        <div class="box">
+          <div class="title">สิ่งที่ปรับแล้ว</div>
+          <div class="small">• ไม่มีสีเทา / สีดำ / สีหม่น<br>• ทุกครั้งที่เริ่ม จะสร้างสีใหม่ทั้งชุด<br>• เน้นสีสดและสว่างสำหรับหลอดไฟ IoT</div>
+        </div>
+        <div class="box">
+          <div class="title">การใช้งาน</div>
+          <div class="small">• ให้นักเรียนกดสุ่มสี<br>• ดูค่า RGB / HEX ของสีที่หยุดได้<br>• ใช้มือถือปรับหลอดไฟให้ใกล้เคียงผลลัพธ์</div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button id="startBtn">เริ่มสุ่ม</button>
+        <button id="newPaletteBtn">สุ่มชุดสีใหม่</button>
+        <span class="pill" id="status">พร้อม</span>
+        <span class="pill">Delay: 1s</span>
+        <span class="pill">Duration: 10s</span>
+        <span class="pill">Palette: Dynamic Bright Colors</span>
+      </div>
+
+      <div class="grid" id="grid"></div>
+
+      <div class="result">
+        <div class="box">
+          <div class="big">ผลลัพธ์</div>
+          <div id="resultText" class="mono">ยังไม่ได้เริ่มสุ่ม</div>
+        </div>
+        <div class="swatch" id="resultSwatch"></div>
+      </div>
+
+      <div class="footer-note">
+        หมายเหตุ: ระบบจะเน้นเฉพาะโทนสีสดและสว่าง จึงเหมาะกับการนำไปตั้งค่าบนแอปหลอดไฟอัจฉริยะทั่วไป เช่น Smart Life / Tuya
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const COLOR_COUNT = 24;
+    const DELAY_MS = 1000;
+    const TOTAL_SECONDS = 10;
+    const TOTAL_TICKS = TOTAL_SECONDS;
+
+    const colorNames = [
+      'Rose Pink','Sunset Orange','Mango Yellow','Lime Green','Leaf Green','Mint Green',
+      'Aqua','Sky Blue','Ocean Blue','Violet','Purple Pink','Coral','Peach','Golden Yellow',
+      'Apple Green','Emerald','Turquoise','Azure','Indigo','Lavender','Hot Pink','Cherry Red',
+      'Amber','Spring Green','Cyan','Blue Violet','Candy Pink','Bright Orange','Fresh Green','Electric Blue'
+    ];
+
+    const grid = document.getElementById('grid');
+    const startBtn = document.getElementById('startBtn');
+    const newPaletteBtn = document.getElementById('newPaletteBtn');
+    const statusEl = document.getElementById('status');
+    const resultText = document.getElementById('resultText');
+    const resultSwatch = document.getElementById('resultSwatch');
+
+    let data = [];
+    let cells = [];
+    let timer = null;
+    let tick = 0;
+    let currentIndex = -1;
+    let running = false;
+
+    function clamp(v, min, max){ return Math.max(min, Math.min(max, v)); }
+
+    function hslToRgb(h, s, l){
+      s /= 100; l /= 100;
+      const c = (1 - Math.abs(2 * l - 1)) * s;
+      const x = c * (1 - Math.abs((h / 60) % 2 - 1));
+      const m = l - c / 2;
+      let r=0,g=0,b=0;
+      if (h < 60) [r,g,b] = [c,x,0];
+      else if (h < 120) [r,g,b] = [x,c,0];
+      else if (h < 180) [r,g,b] = [0,c,x];
+      else if (h < 240) [r,g,b] = [0,x,c];
+      else if (h < 300) [r,g,b] = [x,0,c];
+      else [r,g,b] = [c,0,x];
+      return [
+        Math.round((r + m) * 255),
+        Math.round((g + m) * 255),
+        Math.round((b + m) * 255)
+      ];
+    }
+
+    function rgbToHex([r,g,b]){
+      const toHex = (n)=> n.toString(16).padStart(2,'0');
+      return '#' + toHex(r) + toHex(g) + toHex(b);
+    }
+
+    function isDark([r,g,b]){
+      const l = (0.2126*r + 0.7152*g + 0.0722*b);
+      return l < 150;
+    }
+
+    function shuffle(arr){
+      const a = [...arr];
+      for(let i=a.length-1;i>0;i--){
+        const j = Math.floor(Math.random()*(i+1));
+        [a[i],a[j]] = [a[j],a[i]];
+      }
+      return a;
+    }
+
+    function generateBrightPalette(count=COLOR_COUNT){
+      const baseHue = Math.floor(Math.random() * 360);
+      const indexes = shuffle([...Array(colorNames.length).keys()]);
+      const out = [];
+      for(let i=0;i<count;i++){
+        const step = (360 / count) * i;
+        const hueJitter = Math.random() * 18 - 9;
+        let h = (baseHue + step + hueJitter + 360) % 360;
+        let s = Math.round(78 + Math.random() * 18); // 78-96
+        let l = Math.round(58 + Math.random() * 12); // 58-70
+
+        // กันสีที่ดูจืดเกินไปและกันกลุ่มเข้มเกินไป
+        s = clamp(s, 78, 96);
+        l = clamp(l, 58, 70);
+
+        const rgb = hslToRgb(h, s, l);
+        out.push({
+          name: colorNames[indexes[i % indexes.length]],
+          rgb,
+          hex: rgbToHex(rgb),
+          tag: 'Bright RGB'
+        });
+      }
+      return out;
+    }
+
+    function renderGrid(){
+      grid.innerHTML = '';
+      cells = data.map((d, idx)=>{
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.style.background = d.hex;
+        cell.style.color = isDark(d.rgb) ? '#ffffff' : '#111827';
+        cell.innerHTML = `
+          <div class="tag">${d.tag}</div>
+          <div><div class="name">${d.name}</div></div>
+          <div class="vals">
+            <div>R ${d.rgb[0]}</div>
+            <div>G ${d.rgb[1]}</div>
+            <div>B ${d.rgb[2]}</div>
+          </div>
+        `;
+        cell.dataset.index = idx;
+        grid.appendChild(cell);
+        return cell;
+      });
+    }
+
+    function clearFocus(){ cells.forEach(c=>c.classList.remove('focus')); }
+
+    function pickNextIndex(){
+      let next = Math.floor(Math.random() * cells.length);
+      if (cells.length > 1){
+        while(next === currentIndex) next = Math.floor(Math.random() * cells.length);
+      }
+      return next;
+    }
+
+    function setFocus(index){
+      clearFocus();
+      cells[index].classList.add('focus');
+      currentIndex = index;
+    }
+
+    function showResult(index){
+      const d = data[index];
+      resultSwatch.style.background = `radial-gradient(circle at 50% 35%, rgba(255,255,255,.35), rgba(255,255,255,0) 40%), ${d.hex}`;
+      resultText.innerHTML =
+        `หยุดที่: <b style="color:#e5e7eb">${d.name}</b><br>` +
+        `RGB: ${d.rgb.join(', ')}<br>` +
+        `HEX: ${d.hex}<br>` +
+        `โหมด: Dynamic Bright Colors`;
+    }
+
+    function regeneratePalette(){
+      if (running) return;
+      data = generateBrightPalette();
+      currentIndex = -1;
+      renderGrid();
+      resultText.textContent = 'สร้างชุดสีใหม่แล้ว พร้อมเริ่มสุ่ม';
+      resultSwatch.style.background = '#334155';
+      statusEl.textContent = 'พร้อม (ชุดสีใหม่)';
+    }
+
+    function start(){
+      if (running) return;
+      // ทุกครั้งที่เริ่ม = random สีใหม่ทั้งชุด
+      data = generateBrightPalette();
+      renderGrid();
+      running = true;
+      tick = 0;
+      currentIndex = -1;
+      statusEl.textContent = 'กำลังสุ่ม...';
+      startBtn.disabled = true;
+      newPaletteBtn.disabled = true;
+      resultText.textContent = 'กำลังสุ่ม...';
+
+      setFocus(pickNextIndex());
+      tick++;
+
+      timer = setInterval(()=>{
+        if (tick >= TOTAL_TICKS){
+          stop();
+          return;
+        }
+        setFocus(pickNextIndex());
+        tick++;
+      }, DELAY_MS);
+    }
+
+    function stop(){
+      if (timer) clearInterval(timer);
+      timer = null;
+      running = false;
+      startBtn.disabled = false;
+      newPaletteBtn.disabled = false;
+      statusEl.textContent = 'เสร็จแล้ว ✅';
+      showResult(currentIndex);
+    }
+
+    startBtn.addEventListener('click', start);
+    newPaletteBtn.addEventListener('click', regeneratePalette);
+
+    regeneratePalette();
+  </script>
+</body>
+</html>
